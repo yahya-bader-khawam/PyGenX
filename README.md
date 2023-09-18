@@ -26,13 +26,17 @@ each of the inputs discussed are converted to prompt templates before being inje
 PyGenX greatly increases programmers productivity for various application such as: data analysis and visualization, machine learning and deep learning development, code documentation and refactoring, automation and scripting, file operations, web development, and other software development applications. Basically, the strength and effectiveness of zero-code programming in Python using PyGenX depends on the power of the LLM used with it. Here are some examples:
 
 ## Example 1:
+In this example, we are using the auto_handle() function to ask the LLM to generate and execute this user command "get the sum of fares in titanic dataset. Print and explain your results". PyGenX takes user prompt as input and returns Python objects in return. Notice that a description of the dataset was passed to the function along with a variable containing the dataset. It is important to pass the dataset to the auto_handle() function so that the dataset is processed by the generated Python code.
 ![alt text](https://github.com/yahya-bader-khawam/PyGenX/blob/4e2736b49d034651402eb6e615885918e290598c/Screenshot%202023-09-18%20at%203.32.15%20PM.png)
 
 ## Example 2:
+In this example, PyGenX is prompted with the statement "create two random matricies in numpy and make a dot product between them. print and explain your results.". As you can see in the output, PyGenX returns a array as a result of multiplying two random matrices.
 ![alt text](https://github.com/yahya-bader-khawam/PyGenX/blob/17a4965dda2f5858c3f3938660444bb5f8623dcd/Screenshot%202023-09-18%20at%203.32.50%20PM.png)
 
 ## Example 3:
+In this example, PyGenX is prompted with the statement on how many people survided as per titanic dataset. The dataset and its description were passed to the auto_handle() function.
 ![alt text](https://github.com/yahya-bader-khawam/PyGenX/blob/17a4965dda2f5858c3f3938660444bb5f8623dcd/Screenshot%202023-09-18%20at%203.33.32%20PM.png)
 
 ## Example 4:
+This is a machine learning example on using auto_handle() function from PyGenX to predict the survival status in the titanic dataset.
 ![alt text](https://github.com/yahya-bader-khawam/PyGenX/blob/17a4965dda2f5858c3f3938660444bb5f8623dcd/Screenshot%202023-09-18%20at%203.34.46%20PM.png)
