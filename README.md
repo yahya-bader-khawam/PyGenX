@@ -9,4 +9,8 @@ The goal of this repo is to teach you how to build a tool that helps increasing 
 
 PyGenX greatly increases programmers productivity for various application such as: data analysis and visualization, machine learning and deep learning development, code documentation and refactoring, automation and scripting, file operations, web development, and other software development applications. Basically, the strength and effectiveness of zero-code programming in Python using PyGenX depends on the power of the LLM used with it. Here are some examples:
 
+## Example 1:
 ![alt text](https://github.com/yahya-bader-khawam/PyGenX/blob/4e2736b49d034651402eb6e615885918e290598c/Screenshot%202023-09-18%20at%203.32.15%20PM.png)
+
+## Example 2:
+![alt text](h)
