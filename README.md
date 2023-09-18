@@ -13,4 +13,10 @@ PyGenX greatly increases programmers productivity for various application such a
 ![alt text](https://github.com/yahya-bader-khawam/PyGenX/blob/4e2736b49d034651402eb6e615885918e290598c/Screenshot%202023-09-18%20at%203.32.15%20PM.png)
 
 ## Example 2:
-![alt text](h)
+![alt text](https://github.com/yahya-bader-khawam/PyGenX/blob/17a4965dda2f5858c3f3938660444bb5f8623dcd/Screenshot%202023-09-18%20at%203.32.50%20PM.png)
+
+## Example 3:
+![alt text](https://github.com/yahya-bader-khawam/PyGenX/blob/17a4965dda2f5858c3f3938660444bb5f8623dcd/Screenshot%202023-09-18%20at%203.33.32%20PM.png)
+
+## Example 4:
+![alt text](https://github.com/yahya-bader-khawam/PyGenX/blob/17a4965dda2f5858c3f3938660444bb5f8623dcd/Screenshot%202023-09-18%20at%203.34.46%20PM.png)
