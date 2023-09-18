@@ -7,6 +7,22 @@ The goal of this repo is to teach you how to build a tool that helps increasing 
 * Customizations: Running locally can offer greater flexibility in terms of customization and integration with other local systems and data sources.
 * Resource Utilization: When you run the LLM-generated code on your local machine, you have more control over hardware resource utilization of CPU, GPU and memory.
 
+# The Architecture of PyGenX
+
+The PyGenX library for zero-code development in Python requires three main inputs to it:
+
+* User’s command: this is where the user inputs a command or prompt stating the programming task. This is used by the LLM to generate a Python code that performs the required task. 
+* User’s variables: This is an optional input argument where the user can inject the variables related to his/her command for further processing. Variables could be anything from integers values to full datasets. PyGenX is data-agnostic which means it abstractly deals with the features of data not the data itself. This is important in order to preserve data privacy when using cloud based LLM such as OpenAI models. The LLM understands the related variables through its features without looking at the datapoints of it. Variables features will be discussed later on. 
+* Variable’s description: this is an optional parameter where the user can explain the various aspects about the user’s variables. For example, variables description of a Pandas dataset could be the explanation and definition of each column in the dataset. 
+
+each of the inputs discussed are converted to prompt templates before being injected to the LLM. Those prompt templates will be discussed later on as well. The PyGenX library has five main functionalities:
+
+* Generate Code and Comments: this is where PyGenX generates the code as per the prompt in the user’s command and explains the generated code as well. The output of this block is structured using a parser from LangChain in order to separate the generated code from any other comments so that the generated code can be easily extracted from the output of the LLM and executed.
+* Error Handling: LLM are not perfect, so this block is used to fix the generated code if it throws an error. Similarly, this block also uses a parser from LangChain in order to separate the generated code from any other comments.
+* Auto Code Handling: this block combines both Generated Code and Comments and Error Handling in order to automatically fix any generated code. 
+* Inspect and Execute Code: in this block, the user can choose whether or not the generated Python code by the LLM is executed. The inspection part of this block is see the newly instantiated variables within the generated and executed code.  
+* Operations Database: this database preserves everything related to history of the user’s command such as: all created prompt templates, error messages, user’s variables, variable features, code execution and LLM outputs. This is especially important when creating the code fix prompt template that is passed to the Error Handling block when the generated code throws an error. 
+
 PyGenX greatly increases programmers productivity for various application such as: data analysis and visualization, machine learning and deep learning development, code documentation and refactoring, automation and scripting, file operations, web development, and other software development applications. Basically, the strength and effectiveness of zero-code programming in Python using PyGenX depends on the power of the LLM used with it. Here are some examples:
 
 ## Example 1:
