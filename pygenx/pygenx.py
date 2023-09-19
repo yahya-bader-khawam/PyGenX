@@ -16,8 +16,6 @@ class Parse(BaseModel):
 
 global ops_db
 
-chat = None
-
 ops_db = OrderedDict()
 
 def initialize_llm(external_variable):
