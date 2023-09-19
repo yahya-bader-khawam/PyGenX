@@ -18,6 +18,10 @@ global ops_db
 
 ops_db = OrderedDict()
 
+def initialize_llm(external_variable):
+    external_variable = "some_value"
+    return external_variable
+    
 def llm(prompt):
   return chat.predict(prompt)
 
