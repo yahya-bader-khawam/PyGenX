@@ -1,1 +1,2 @@
 import .pygenx
+global chat
