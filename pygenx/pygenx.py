@@ -1,14 +1,3 @@
-from langchain.llms import OpenAI, OpenAIChat
-from langchain import PromptTemplate, LLMChain
-from collections import OrderedDict
-from langchain.output_parsers import StructuredOutputParser, ResponseSchema
-from langchain.output_parsers import PydanticOutputParser
-from pydantic import BaseModel, Field, validator
-from langchain.prompts import PromptTemplate, ChatPromptTemplate, HumanMessagePromptTemplate
-from langchain.output_parsers import PydanticOutputParser
-from pydantic import BaseModel, Field, validator
-from langchain.chat_models import ChatOpenAI
-
 
 class Parse(BaseModel):
     code: str = Field(description="only provide a runnable python code as per the user's instruction")
@@ -16,17 +5,16 @@ class Parse(BaseModel):
 
 global ops_db
 
-ops_db = OrderedDict()
-
-def initialize_llm(external_variable):
-    external_variable = "some_value"
-    return external_variable
-    
-def llm(prompt):
-  return chat.predict(prompt)
+ops_db = OrderedDict() # operations ordered python dictionary database
 
 
-def vars_features(**vars):
+
+
+
+################ vars features ###################
+
+
+def vars_features(llm, **vars):
 
   k = 1
 
@@ -52,13 +40,14 @@ def vars_features(**vars):
     you should only provide runnable python code without further comments or anything else.
     """
     x = llm(questions)
-    exec(x, globals())
+    exec(x, globals()) # answers variable is hidden within this execution
     answers = cols_and_rows()
     features['columns_available'] = answers[0]
     features['columns_names_available'] = answers[1]
     features['rows_available'] = answers[2]
     features['rows_names_available'] = answers[3]
 
+    # extract columns names
     if features['columns_names_available'] == 'yes':
       code_cols = llm(f"""
       write a python function called return_column_names that takes a variable X
@@ -70,6 +59,7 @@ def vars_features(**vars):
     else:
       features['columns_names'] = None
 
+    # check the dimsions of this variable
     dim_code = llm(f"""
     write a python function called var_dim that takes a variable X
     with {type(var_value)} data type and returns the number of dimensions of it. provide only
@@ -78,6 +68,7 @@ def vars_features(**vars):
     exec(dim_code, globals())
     features['dimension'] = var_dim(var_value)
 
+      # check the dimsions of this variable
     shape_code = llm(f"""
     write a python function called var_shape that takes a variable X
     with {type(var_value)} data type and returns the shape of it. provide only
@@ -106,6 +97,7 @@ def vars_features(**vars):
   print('--> All variables features were extracted.\n')
   return vars_features
 
+################ vars features to string #################
 
 def vars_features_to_string(vars_features):
   s=''
@@ -118,26 +110,37 @@ def vars_features_to_string(vars_features):
 
 
 
+################# inspect and execute ##################
+
+
 def inspect_and_execute(code_to_execute):
+  # Step 1: Save the initial state of the global symbol table
   initial_globals = globals().copy()
+
+  # Step 2: Execute the code using exec()
   exec(code_to_execute, globals())
+
+  # Step 3: Compare the initial global symbol table with the one after executing the code
   new_variables = {
       name: value
       for name, value in globals().items()
       if name not in initial_globals or initial_globals[name] is not value
   }
+
   return new_variables
 
 
+################# instruct llm ##################
 
-def instruct_llm(command, run_code = True, vars_description = "", **vars):
+def instruct_llm(llm, command, run_code = True, vars_description = "", **vars):
+  #### block 1: prompt template
   input_variables_dict = {"query":command}
   # Set up a parser + inject instructions into the prompt template.
   parser = PydanticOutputParser(pydantic_object=Parse)
   instruction_template = "Answer the user query.\n{query}\n"
   if len(vars) > 0:
     instruction_template += "{vars_features_template}\n"
-    vars_features_str, input_variables_dict["vars_features_template"] = vars_features_template_gen(**vars)
+    vars_features_str, input_variables_dict["vars_features_template"] = vars_features_template_gen(llm, **vars)
   if len(vars_description) > 0:
     instruction_template += "{vars_description_template}\n"
     input_variables_dict["vars_description_template"] = vars_description_template(vars_description)
@@ -149,38 +152,57 @@ def instruct_llm(command, run_code = True, vars_description = "", **vars):
       partial_variables={"format_instructions": parser.get_format_instructions()},
   )
   _input = prompt.format_prompt(**input_variables_dict)
+
+
+  #### block 2: prediction
   output = llm(_input.to_string())
+
+  #### block 3: output parser
   output_parse = parser.parse(output)
-  code = output_parse.code.replace('```python','').replace('```','')
-  #code = output_parse.code.replace('```python','').replace('```','').replace('fare','Fares')
+  #code = output_parse.code.replace('```python','').replace('```','')
+  code = output_parse.code.replace('```python','').replace('```','').replace('fare','Fares')
   explain_code = output_parse.explain_code
+
+
+  #### block 4: update operations dictionary
   database={}
   if len(vars) > 0:
     database['vars_features'] = vars_features_str
     database['given_vars'] = list(vars)
+
   database['instruction_template'] = instruction_template
   database['generated_code'] = code
   database['explain_code'] = explain_code
   database['run_code'] = run_code
   database['llm_input'] = _input
+
+  #### block 5: inspect and execute generated code
   error_message = None
   if run_code == True:
     try:
+      # inspect global variables executed within exec() and exec the output['code']
       exec_vars = inspect_and_execute(code)
       database['variables'] = exec_vars
       print("...............\nThe LLM's generated code was executed as per the command, and the following variables were created within the execution function:",exec_vars.keys())
     except Exception as e:
+      # Extract the error message
       error_message = str(e)
       database['error_message'] = error_message
       print("\nError message after executing the generated code.\nHere is the error message:\n", error_message,'\n')
+
+  # update operations database
   ops_db[command] = database
+
   return code, explain_code, error_message
 
 
 
-def vars_features_template_gen(**vars):
+################# vars features template ##################
 
-  vf = vars_features(**vars)
+
+def vars_features_template_gen(llm, **vars):
+
+  vf = vars_features(llm, **vars)
   vars_features_str = vars_features_to_string(vf)
   return vars_features_str, f"""\n
 The user's instruction deals with this list of variables {list(vars)} I will help you understand those variables through their features stored in
@@ -214,6 +236,9 @@ of each property:
 In summary, this dictionary provides an extensive mapping of variable names to the properties of the data those variables are storing. This could be useful in many
 contexts, such as data analysis, debugging, or any situation where you need to keep track of a large number of variables and their properties. Take those features of
 the variables into account when performing the user's instruction. Here are the features for each of the variables that will be used in the code generated for the user:{vars_features_str}"""
+
+################# vars description template ##################
+
 
 def vars_description_template(vars_description):
   return f"""
@@ -250,6 +275,10 @@ that can be supported by large language models. Take the description of the vari
 each of the variables: \n{vars_description}.
 """
 
+
+################## fix code template #####################
+
+
 def fix_code_template(from_command, source_code):
   instruction_template_without_format = ops_db[from_command]['llm_input'].text.split("The output should be formatted as a JSON instance that conforms to the JSON schema below.")[0]
   s = f"""This is the erroneous code:\n{ops_db[from_command][source_code]}\nThe generated error message from the erroneous code above is:\n'{ops_db[from_command]['error_message']}'\n
@@ -257,70 +286,103 @@ def fix_code_template(from_command, source_code):
       """
   return s
 
-def error_handling(from_command = None, custom_fix_template = None, run_code = True, source_code = 'generated_code', custom_input_variables={}):
+################## error handling #######################
 
+def error_handling(llm, from_command = None, custom_fix_template = None, run_code = True, source_code = 'generated_code', custom_input_variables={}):
+
+  # block 1: prompt template
   parser = PydanticOutputParser(pydantic_object=Parse)
+
   fix_template = """{query}:\n"""
+
   if from_command is not None:
     fix_template += fix_code_template(from_command, source_code)
   else:
     fix_template += custom_fix_template
+
   fix_template += "\n{format_instructions}"
+
   if len(custom_input_variables) == 0:
     in_vars = ['query']
   else:
     in_vars = list(custom_input_variables.keys())
+
   prompt = PromptTemplate(
       template = fix_template,
       input_variables = in_vars,
       partial_variables={"format_instructions": parser.get_format_instructions()},
   )
+
+  # block 2: prediction
   if len(custom_input_variables) > 0:
     _input = prompt.format_prompt(**custom_input_variables)
   else:
     _input = prompt.format_prompt(query="fix this code:\n")
   ops_db[from_command]['llm_input_fix'] = _input.text
   output = llm(_input.to_string())
+
+  #block 3: output parsing
   output_parse = parser.parse(output)
   fixed_code = output_parse.code.replace('```python','').replace('```','')
   explain_fixed_code = output_parse.explain_code
+
+  # block 4: error handling
   error_message = None
   if run_code == True:
     try:
+      # inspect global variables executed within exec() and exec the output['code']
       exec_vars = inspect_and_execute(fixed_code)
       if from_command is not None:
         ops_db[from_command]['variables'] = exec_vars
         ops_db[from_command]['fixed_code'] = fixed_code
       print("...............\n--> The LLM's generated code was fixed and executed as per the command, and the following variables were created within the execution function:",exec_vars.keys())
     except Exception as e:
+      # Extract the error message
       error_message = str(e)
       ops_db[from_command]['fixed_code'] = fixed_code
       ops_db[from_command]['error_message_after_fix'] = error_message
       print("\nThere was an error even after tryubg to fix the code! Here is the error message:\n", error_message)
+
   return fixed_code, explain_fixed_code, error_message
 
+################## auto code gen #######################
 
-def auto_handle(command, vars_description = "", max_fixes = 3, run_code = True, **vars):
 
-  k=1
-  code, explain_code, error_message = instruct_llm(command, run_code = run_code, vars_description = vars_description, **vars)
+def auto_handle(llm, command, vars_description = "", max_fixes = 3, run_code = True, **vars):
+
+  k=1 # max_fixes counter
+
+  # block 1: instruct the LLM with a prompt through the instruct_llm() function
+  code, explain_code, error_message = instruct_llm(llm, command, run_code = run_code, vars_description = vars_description, **vars)
   original_code = code
+
+  # block 2: instruct LLM to fix the erroneous code (if exists) until the error is resolved or until the max number of fixes allowed is reached.
   while (k <= max_fixes) and (error_message is not None):
+
+    # block 2.1: get the souce of the erronous code
     print(f'--> This is the {k}/{max_fixes} try to fix the erroneous code:')
     error_message = None
     if k == 1:
       source_code = 'generated_code'
     else:
       source_code = 'fixed_code'
-    code, explain_code, error_message = error_handling(from_command = command, run_code = run_code, source_code = source_code)
+
+    # block 2.2: call the error_handling() function to fix the source code
+    code, explain_code, error_message = error_handling(llm, from_command = command, run_code = run_code, source_code = source_code)
+
+    # block 2.3: if error_message is None, it means that the source erroneous code was fixed. otherwise, the fixed code still does not work
     if error_message is not None:
       print('The erroneous code was still not fixed. The new error message is:\n',error_message)
     else:
       print('\n--> Here is a comparison between the first generated code and the fixed one:')
       print(llm(f"""This is the original code generated which which outputs an error:\n{original_code}\nHere is the fixed code:\n{code}\nExpalain the difference between the original code generated and the fixed one.""").replace(". ",".\n"))
     k += 1
+
+  # block 3: report the status of fixing the erroneous code after the while loop
   else:
     print(f'--> Number of code fixes attempted k = {k-1}.')
     if error_message is not None:
       print('The original code generated by the LLM was unfortunately not fixed, so try to manually adjust it')
+
   return code, explain_code, error_message
+
