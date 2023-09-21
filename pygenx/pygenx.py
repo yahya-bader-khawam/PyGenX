@@ -17,8 +17,9 @@ from pydantic import BaseModel, Field, validator
 from typing import List
 from langchain.chat_models import ChatOpenAI
 
+basemodel = BaseModel
 
-class Parse(BaseModel):
+class Parse(basemodel):
     code: str = Field(description="only provide a runnable python code as per the user's instruction")
     explain_code: str = Field(description="explanation of the generated code")
 
