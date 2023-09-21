@@ -1,2 +1,2 @@
-import .pygenx
+import pygenx.pygenx as pygenx
 
